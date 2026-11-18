@@ -26,3 +26,12 @@
 .safe-bottom {
   padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 72px);
 }
+.input-campo {
+  @apply w-full px-3 py-2 bg-white border border-chef-200 rounded-xl text-sm text-chef-900 focus:outline-none focus:ring-2 focus:ring-chef-400;
+}
+.label-campo {
+  @apply block text-[11px] font-bold text-chef-700 mb-1;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
