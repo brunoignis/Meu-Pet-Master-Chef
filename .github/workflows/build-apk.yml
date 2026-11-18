@@ -12,16 +12,16 @@ jobs:
 
     steps:
       - name: Baixar código do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
-          cache: 'npm'
+          package-manager-cache: false
 
       - name: Configurar Java 21 (JDK)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -54,7 +54,7 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Disponibilizar APK para Download
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MeuPetChef-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
