@@ -493,4 +493,348 @@ function ModalAnimal({ item, tutores, onClose }) {
             {form.foto ? (
               <img src={form.foto} alt="Pet" className="w-20 h-20 rounded-2xl object-cover border-2 border-chef-300" />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-chef-100 text-chef-600 flex flex-col items-center justify-center border-2 border-dashed border-chef-300
+              <div className="w-20 h-20 rounded-2xl bg-chef-100 text-chef-600 flex flex-col items-center justify-center border-2 border-dashed border-chef-300">
+                <Camera className="w-6 h-6" />
+                <span className="text-[10px] font-semibold mt-1">Foto Pet</span>
+              </div>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={handleFoto} />
+          </label>
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-chef-700 mb-1">Tutor responsável</label>
+            <select
+              value={form.tutorId}
+              onChange={(e) => setForm({ ...form, tutorId: e.target.value })}
+              className="w-full px-3 py-2 border border-chef-200 rounded-xl text-sm bg-white"
+            >
+              <option value="">-- Selecione um tutor --</option>
+              {tutores.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <Campo label="Nome do Pet *" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} required />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-bold text-chef-700 mb-1">Espécie</label>
+            <select
+              value={form.especie}
+              onChange={(e) => setForm({ ...form, especie: e.target.value })}
+              className="w-full px-3 py-2 border border-chef-200 rounded-xl text-sm bg-white"
+            >
+              <option value="Cão">Cão</option>
+              <option value="Gato">Gato</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-chef-700 mb-1">Sexo</label>
+            <select
+              value={form.sexo}
+              onChange={(e) => setForm({ ...form, sexo: e.target.value })}
+              className="w-full px-3 py-2 border border-chef-200 rounded-xl text-sm bg-white"
+            >
+              <option value="Macho">Macho</option>
+              <option value="Fêmea">Fêmea</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <Campo label="Idade" placeholder="Ex: 3 anos" value={form.idade} onChange={(v) => setForm({ ...form, idade: v })} />
+          <Campo label="Peso (kg)" type="number" step="0.1" value={form.pesoKg} onChange={(v) => setForm({ ...form, pesoKg: v })} />
+          <Campo label="Raça" value={form.raca} onChange={(v) => setForm({ ...form, raca: v })} />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
+        >
+          Salvar Animal
+        </button>
+      </form>
+    </ModalWrapper>
+  );
+}
+
+/* ---------- MODAL INGREDIENTE ---------- */
+function ModalIngrediente({ item, onClose }) {
+  const vazioNutr = {};
+  NUTRIENTES_PADRAO.forEach((n) => (vazioNutr[n.key] = ''));
+
+  const [form, setForm] = useState(
+    item
+      ? { ...item, nutrientes100g: { ...vazioNutr, ...(item.nutrientes100g || {}) } }
+      : { nome: '', categoria: 'carne_desossada', dadosCompletos: true, nutrientes100g: vazioNutr }
+  );
+
+  const atualizarNutr = (key, val) => {
+    setForm((p) => ({
+      ...p,
+      nutrientes100g: { ...p.nutrientes100g, [key]: val }
+    }));
+  };
+
+  const salvar = async (e) => {
+    e.preventDefault();
+    if (!form.nome.trim()) return;
+    const nutrLimpo = {};
+    NUTRIENTES_PADRAO.forEach((n) => {
+      nutrLimpo[n.key] = parseFloat(form.nutrientes100g[n.key]) || 0;
+    });
+
+    const payload = {
+      nome: form.nome.trim(),
+      categoria: form.categoria,
+      dadosCompletos: Boolean(form.dadosCompletos),
+      nutrientes100g: nutrLimpo
+    };
+
+    if (item?.id) await db.ingredientes.update(item.id, payload);
+    else await db.ingredientes.add(payload);
+    onClose();
+  };
+
+  return (
+    <ModalWrapper titulo={item ? 'Editar Ingrediente' : 'Novo Ingrediente'} onClose={onClose}>
+      <form onSubmit={salvar} className="space-y-3">
+        <Campo label="Nome do alimento *" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} required />
+
+        <div>
+          <label className="block text-xs font-bold text-chef-700 mb-1">Grupo de Alimento</label>
+          <select
+            value={form.categoria}
+            onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+            className="w-full px-3 py-2.5 border border-chef-200 rounded-xl text-sm bg-white"
+          >
+            {CATEGORIAS_INGREDIENTES.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <label className="flex items-center gap-2 p-3 rounded-xl bg-chef-50 border border-chef-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.dadosCompletos}
+            onChange={(e) => setForm({ ...form, dadosCompletos: e.target.checked })}
+            className="w-4 h-4 accent-chef-500"
+          />
+          <span className="text-xs font-semibold text-chef-800">
+            Composição nutricional completa (por 100g) preenchida
+          </span>
+        </label>
+
+        {form.dadosCompletos && (
+          <div className="bg-chef-50/70 p-3 rounded-2xl border border-chef-100 space-y-2">
+            <p className="text-xs font-bold text-chef-700">Tabela Nutricional (valores em 100g):</p>
+            <div className="grid grid-cols-2 gap-2">
+              {NUTRIENTES_PADRAO.map((n) => (
+                <Campo
+                  key={n.key}
+                  label={`${n.label} (${n.unidade})`}
+                  type="number"
+                  step="0.01"
+                  value={form.nutrientes100g[n.key]}
+                  onChange={(v) => atualizarNutr(n.key, v)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
+        >
+          Salvar Ingrediente
+        </button>
+      </form>
+    </ModalWrapper>
+  );
+}
+
+/* ---------- MODAL SUPLEMENTO ---------- */
+function ModalSuplemento({ item, onClose }) {
+  const [form, setForm] = useState(
+    item || {
+      nome: '',
+      marca: '',
+      lote: '',
+      validade: '',
+      unidade: 'g',
+      fotos: [],
+      substancias: [{ nome: '', quantidade: '', unidade: 'mg' }]
+    }
+  );
+
+  const adicionarFoto = async (e) => {
+    const files = Array.from(e.target.files || []);
+    const novas = await Promise.all(files.map((f) => comprimirImagem(f, 600)));
+    setForm((p) => ({ ...p, fotos: [...(p.fotos || []), ...novas] }));
+  };
+
+  const removerFoto = (idx) => {
+    setForm((p) => ({ ...p, fotos: p.fotos.filter((_, i) => i !== idx) }));
+  };
+
+  const addSubstancia = () => {
+    setForm((p) => ({
+      ...p,
+      substancias: [...(p.substancias || []), { nome: '', quantidade: '', unidade: 'mg' }]
+    }));
+  };
+
+  const editSubstancia = (idx, campo, valor) => {
+    setForm((p) => {
+      const copia = [...p.substancias];
+      copia[idx] = { ...copia[idx], [campo]: valor };
+      return { ...p, substancias: copia };
+    });
+  };
+
+  const removerSubstancia = (idx) => {
+    setForm((p) => ({ ...p, substancias: p.substancias.filter((_, i) => i !== idx) }));
+  };
+
+  const salvar = async (e) => {
+    e.preventDefault();
+    if (!form.nome.trim()) return;
+    const payload = {
+      ...form,
+      substancias: (form.substancias || [])
+        .filter((s) => s.nome.trim() !== '')
+        .map((s) => ({ ...s, quantidade: parseFloat(s.quantidade) || 0 }))
+    };
+    if (item?.id) await db.suplementos.update(item.id, payload);
+    else await db.suplementos.add(payload);
+    onClose();
+  };
+
+  return (
+    <ModalWrapper titulo={item ? 'Editar Suplemento' : 'Novo Suplemento'} onClose={onClose}>
+      <form onSubmit={salvar} className="space-y-3">
+        <Campo label="Nome do suplemento *" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} required />
+        <div className="grid grid-cols-2 gap-2">
+          <Campo label="Marca" value={form.marca} onChange={(v) => setForm({ ...form, marca: v })} />
+          <Campo label="Unidade de dose" placeholder="g, ml, scoop" value={form.unidade} onChange={(v) => setForm({ ...form, unidade: v })} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Campo label="Lote" value={form.lote} onChange={(v) => setForm({ ...form, lote: v })} />
+          <Campo label="Validade" type="date" value={form.validade} onChange={(v) => setForm({ ...form, validade: v })} />
+        </div>
+
+        {/* Fotos do suplemento / rótulo */}
+        <div>
+          <label className="block text-xs font-bold text-chef-700 mb-1.5">Fotos (Produto e Rótulo)</label>
+          <div className="flex flex-wrap gap-2">
+            {(form.fotos || []).map((src, idx) => (
+              <div key={idx} className="relative w-16 h-16">
+                <img src={src} alt="Sup" className="w-16 h-16 rounded-xl object-cover border border-chef-200" />
+                <button
+                  type="button"
+                  onClick={() => removerFoto(idx)}
+                  className="absolute -top-1.5 -right-1.5 bg-tomato text-white rounded-full p-0.5 shadow"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            <label className="w-16 h-16 rounded-xl bg-chef-50 border-2 border-dashed border-chef-300 flex flex-col items-center justify-center text-chef-600 cursor-pointer">
+              <Camera className="w-5 h-5" />
+              <span className="text-[10px]">Add</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={adicionarFoto} />
+            </label>
+          </div>
+        </div>
+
+        {/* Substâncias relatadas no rótulo */}
+        <div className="bg-chef-50/70 p-3 rounded-2xl border border-chef-100 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-chef-700">Substâncias no rótulo (por 1 {form.unidade || 'unidade'})</span>
+            <button type="button" onClick={addSubstancia} className="text-xs font-bold text-chef-600 flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" /> Add
+            </button>
+          </div>
+          {(form.substancias || []).map((sub, idx) => (
+            <div key={idx} className="grid grid-cols-12 gap-1.5 items-center">
+              <input
+                type="text"
+                placeholder="Substância"
+                value={sub.nome}
+                onChange={(e) => editSubstancia(idx, 'nome', e.target.value)}
+                className="col-span-5 px-2.5 py-1.5 bg-white border border-chef-200 rounded-lg text-xs"
+              />
+              <input
+                type="number"
+                step="0.001"
+                placeholder="Qtd"
+                value={sub.quantidade}
+                onChange={(e) => editSubstancia(idx, 'quantidade', e.target.value)}
+                className="col-span-3 px-2 py-1.5 bg-white border border-chef-200 rounded-lg text-xs"
+              />
+              <input
+                type="text"
+                placeholder="Unid"
+                value={sub.unidade}
+                onChange={(e) => editSubstancia(idx, 'unidade', e.target.value)}
+                className="col-span-3 px-2 py-1.5 bg-white border border-chef-200 rounded-lg text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => removerSubstancia(idx)}
+                className="col-span-1 text-tomato flex justify-center"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
+        >
+          Salvar Suplemento
+        </button>
+      </form>
+    </ModalWrapper>
+  );
+}
+
+function Campo({ label, value, onChange, type = 'text', placeholder = '', required = false, step }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-chef-700 mb-1">{label}</label>
+      <input
+        type={type}
+        step={step}
+        required={required}
+        placeholder={placeholder}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 border border-chef-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-chef-400"
+      />
+    </div>
+  );
+}
+
+function CampoTexto({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-chef-700 mb-1">{label}</label>
+      <textarea
+        rows={2}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 border border-chef-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-chef-400"
+      />
+    </div>
+  );
+}
