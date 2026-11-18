@@ -9,29 +9,37 @@
   }
 }
 
-/* Fundo exclusivo Meu Pet Chef: degradê aqua + padrão de patinhas, cenouras, peixinhos, frango e chef */
+@layer components {
+  .input-campo {
+    @apply w-full px-3 py-2 bg-white border border-chef-200 rounded-xl text-sm text-chef-900 focus:outline-none focus:ring-2 focus:ring-chef-400;
+  }
+  .label-campo {
+    @apply block text-[11px] font-bold text-chef-700 mb-1;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 12px);
+  }
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 72px);
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Fundo exclusivo Meu Pet Chef: degradê aqua + padrão de patinhas, cenouras, peixinhos, tigela e coração */
 .bg-pet-chef {
   background-color: #eef7f9;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140' fill='none'%3E%3Cg opacity='0.09' stroke='%23225362' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3C!-- Patinha --%3E%3Ccircle cx='28' cy='28' r='4.5'/%3E%3Ccircle cx='19' cy='20' r='2.2'/%3E%3Ccircle cx='28' cy='17' r='2.2'/%3E%3Ccircle cx='37' cy='20' r='2.2'/%3E%3C!-- Cenoura --%3E%3Cpath d='M96 18 L112 34 L90 30 Z'/%3E%3Cpath d='M104 20 L110 12 M101 18 L101 10'/%3E%3C!-- Peixinho --%3E%3Cpath d='M22 98 Q40 82 56 98 Q40 114 22 98 Z'/%3E%3Cpath d='M56 98 L65 90 L65 106 Z'/%3E%3Ccircle cx='32' cy='96' r='1.5' fill='%23225362'/%3E%3C!-- Tigela e Brócolis --%3E%3Cpath d='M88 106 H116 L110 118 H94 Z'/%3E%3Ccircle cx='98' cy='98' r='5'/%3E%3Ccircle cx='106' cy='98' r='5'/%3E%3C!-- Coração --%3E%3Cpath d='M70 55 C70 51 64 51 64 56 C64 60 70 64 70 64 C70 64 76 60 76 56 C76 51 70 51 70 55 Z'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140' fill='none'%3E%3Cg opacity='0.09' stroke='%23225362' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='28' cy='28' r='4.5'/%3E%3Ccircle cx='19' cy='20' r='2.2'/%3E%3Ccircle cx='28' cy='17' r='2.2'/%3E%3Ccircle cx='37' cy='20' r='2.2'/%3E%3Cpath d='M96 18 L112 34 L90 30 Z'/%3E%3Cpath d='M104 20 L110 12 M101 18 L101 10'/%3E%3Cpath d='M22 98 Q40 82 56 98 Q40 114 22 98 Z'/%3E%3Cpath d='M56 98 L65 90 L65 106 Z'/%3E%3Ccircle cx='32' cy='96' r='1.5' fill='%23225362'/%3E%3Cpath d='M88 106 H116 L110 118 H94 Z'/%3E%3Ccircle cx='98' cy='98' r='5'/%3E%3Ccircle cx='106' cy='98' r='5'/%3E%3Cpath d='M70 55 C70 51 64 51 64 56 C64 60 70 64 70 64 C70 64 76 60 76 56 C76 51 70 51 70 55 Z'/%3E%3C/g%3E%3C/svg%3E"),
     linear-gradient(165deg, #e3f2f6 0%, #f5fbfc 55%, #dcf0f4 100%);
   background-size: 140px 140px, cover;
   background-attachment: fixed;
-}
-
-/* Ajuste para área segura da barra de status no Android */
-.safe-top {
-  padding-top: env(safe-area-inset-top, 12px);
-}
-.safe-bottom {
-  padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 72px);
-}
-.input-campo {
-  @apply w-full px-3 py-2 bg-white border border-chef-200 rounded-xl text-sm text-chef-900 focus:outline-none focus:ring-2 focus:ring-chef-400;
-}
-.label-campo {
-  @apply block text-[11px] font-bold text-chef-700 mb-1;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
 }
