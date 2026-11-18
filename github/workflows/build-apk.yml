@@ -1,0 +1,60 @@
+name: Compilar APK Meu Pet Chef
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Gerar APK Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Configurar Java 21 (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Compilar interface Web (Vite)
+        run: npm run build
+
+      - name: Criar plataforma Android (Capacitor)
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+
+      - name: Gerar ícones e Splash Screen (se assets/logo.png existir)
+        run: |
+          if [ -f "assets/logo.png" ] || [ -f "assets/icon-only.png" ]; then
+            npx capacitor-assets generate --android --iconBackgroundColor "#2F7D8F" --splashBackgroundColor "#2F7D8F"
+          fi
+
+      - name: Sincronizar arquivos com Android
+        run: npx cap sync android
+
+      - name: Compilar APK de Instalação (Debug)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Disponibilizar APK para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuPetChef-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
