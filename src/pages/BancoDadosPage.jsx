@@ -12,10 +12,18 @@ import {
   Camera,
   X,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  FileSpreadsheet,
+  Download,
+  Upload
 } from 'lucide-react';
 import { db, CATEGORIAS_INGREDIENTES, NUTRIENTES_PADRAO } from '../db/database';
 import { comprimirImagem } from '../utils/imageHelper';
+import {
+  baixarModeloExcel,
+  exportarBancoExcel,
+  importarBancoExcel
+} from '../utils/excelDatabase';
 
 const SUBABAS = [
   { id: 'tutores', label: 'Tutores', icon: Users },
@@ -28,6 +36,8 @@ export default function BancoDadosPage() {
   const [abaAtiva, setAbaAtiva] = useState('tutores');
   const [busca, setBusca] = useState('');
   const [filtroCat, setFiltroCat] = useState('todas');
+  const [atualizarExistentes, setAtualizarExistentes] = useState(true);
+  const [statusExcel, setStatusExcel] = useState('');
 
   const tutores = useLiveQuery(() => db.tutores.orderBy('nome').toArray(), []) || [];
   const animais = useLiveQuery(() => db.animais.orderBy('nome').toArray(), []) || [];
@@ -50,6 +60,26 @@ export default function BancoDadosPage() {
   const excluirItem = async (tabela, id, nome) => {
     if (!window.confirm(`Deseja excluir "${nome}" do banco de dados?`)) return;
     await db[tabela].delete(id);
+  };
+
+  const handleImportarExcel = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setStatusExcel('Importando...');
+    try {
+      const r = await importarBancoExcel(file, { atualizarExistentes });
+      alert(
+        `Importação concluída!\n\n` +
+          `Ingredientes: ${r.ingAdicionados} novo(s), ${r.ingAtualizados} atualizado(s), ${r.ingIgnorados} ignorado(s).\n` +
+          `Suplementos: ${r.supAdicionados} novo(s), ${r.supAtualizados} atualizado(s), ${r.supIgnorados} ignorado(s).`
+      );
+    } catch (err) {
+      console.error(err);
+      alert(`Erro ao importar planilha: ${err.message || err}`);
+    } finally {
+      setStatusExcel('');
+    }
   };
 
   const termo = busca.trim().toLowerCase();
@@ -108,6 +138,56 @@ export default function BancoDadosPage() {
           );
         })}
       </div>
+
+      {/* Painel Importar / Exportar Excel em Lote (Ingredientes e Suplementos) */}
+      {(abaAtiva === 'ingredientes' || abaAtiva === 'suplementos') && (
+        <div className="bg-white/95 rounded-2xl p-3 shadow-sm border border-chef-100 space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-extrabold text-chef-800 flex items-center gap-1.5">
+              <FileSpreadsheet className="w-4 h-4 text-broccoli" />
+              Importar / Exportar em Lote (Excel)
+            </span>
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-chef-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={atualizarExistentes}
+                onChange={(e) => setAtualizarExistentes(e.target.checked)}
+                className="accent-chef-500"
+              />
+              Atualizar se já existir
+            </label>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => baixarModeloExcel()}
+              className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-chef-50 text-chef-800 border border-chef-200 text-[11px] font-bold active:scale-95 transition"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Modelo
+            </button>
+            <button
+              type="button"
+              onClick={() => exportarBancoExcel()}
+              className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-emerald-50 text-broccoli border border-emerald-200 text-[11px] font-bold active:scale-95 transition"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportar
+            </button>
+            <label className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-chef-500 text-white text-[11px] font-bold cursor-pointer active:scale-95 transition shadow-sm">
+              <Upload className="w-3.5 h-3.5" />
+              {statusExcel || 'Importar'}
+              <input
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                className="hidden"
+                onChange={handleImportarExcel}
+              />
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* Barra de busca + Botão Novo */}
       <div className="flex gap-2">
@@ -268,7 +348,7 @@ export default function BancoDadosPage() {
                     {ing.dadosCompletos ? (
                       <span className="inline-flex items-center gap-1 text-broccoli font-semibold">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        {ing.nutrientes100g?.kcal || 0} kcal • Prot {ing.nutrientes100g?.proteina || 0}g / 100g
+                        {ing.nutrientes100g?.kcal ?? '-'} kcal • Prot {ing.nutrientes100g?.proteina ?? '-'}g / 100g
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-carrot font-semibold">
@@ -302,7 +382,7 @@ export default function BancoDadosPage() {
       {abaAtiva === 'suplementos' && (
         <div className="space-y-2.5">
           {suplementosFiltrados.length === 0 && (
-            <EmptyCard texto="Nenhum suplemento cadastrado. Adicione marca, lote, validade, fotos e rótulo." />
+            <EmptyCard texto="Nenhum suplemento cadastrado. Adicione pelo botão '+ Novo' ou importe via Excel." />
           )}
           {suplementosFiltrados.map((s) => {
             const vencido = s.validade && new Date(`${s.validade}T00:00:00`) < new Date(new Date().toDateString());
@@ -356,19 +436,11 @@ export default function BancoDadosPage() {
         </div>
       )}
 
-      {/* MODAIS DE CADASTRO / EDIÇÃO */}
-      {modalTipo === 'tutores' && (
-        <ModalTutor item={editItem} onClose={() => setModalTipo(null)} />
-      )}
-      {modalTipo === 'animais' && (
-        <ModalAnimal item={editItem} tutores={tutores} onClose={() => setModalTipo(null)} />
-      )}
-      {modalTipo === 'ingredientes' && (
-        <ModalIngrediente item={editItem} onClose={() => setModalTipo(null)} />
-      )}
-      {modalTipo === 'suplementos' && (
-        <ModalSuplemento item={editItem} onClose={() => setModalTipo(null)} />
-      )}
+      {/* MODAIS */}
+      {modalTipo === 'tutores' && <ModalTutor item={editItem} onClose={() => setModalTipo(null)} />}
+      {modalTipo === 'animais' && <ModalAnimal item={editItem} tutores={tutores} onClose={() => setModalTipo(null)} />}
+      {modalTipo === 'ingredientes' && <ModalIngrediente item={editItem} onClose={() => setModalTipo(null)} />}
+      {modalTipo === 'suplementos' && <ModalSuplemento item={editItem} onClose={() => setModalTipo(null)} />}
     </div>
   );
 }
@@ -452,10 +524,7 @@ function ModalTutor({ item, onClose }) {
         <Campo label="E-mail" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
         <CampoTexto label="Observações" value={form.observacoes} onChange={(v) => setForm({ ...form, observacoes: v })} />
 
-        <button
-          type="submit"
-          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
-        >
+        <button type="submit" className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow">
           Salvar Tutor
         </button>
       </form>
@@ -550,10 +619,7 @@ function ModalAnimal({ item, tutores, onClose }) {
           <Campo label="Raça" value={form.raca} onChange={(v) => setForm({ ...form, raca: v })} />
         </div>
 
-        <button
-          type="submit"
-          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
-        >
+        <button type="submit" className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow">
           Salvar Animal
         </button>
       </form>
@@ -566,11 +632,17 @@ function ModalIngrediente({ item, onClose }) {
   const vazioNutr = {};
   NUTRIENTES_PADRAO.forEach((n) => (vazioNutr[n.key] = ''));
 
-  const [form, setForm] = useState(
-    item
-      ? { ...item, nutrientes100g: { ...vazioNutr, ...(item.nutrientes100g || {}) } }
-      : { nome: '', categoria: 'carne_desossada', dadosCompletos: true, nutrientes100g: vazioNutr }
-  );
+  const [form, setForm] = useState(() => {
+    if (!item) {
+      return { nome: '', categoria: 'carne_desossada', dadosCompletos: true, nutrientes100g: vazioNutr };
+    }
+    const carregado = { ...vazioNutr };
+    NUTRIENTES_PADRAO.forEach((n) => {
+      const val = item.nutrientes100g?.[n.key];
+      carregado[n.key] = val === null || val === undefined ? '' : val;
+    });
+    return { ...item, nutrientes100g: carregado };
+  });
 
   const atualizarNutr = (key, val) => {
     setForm((p) => ({
@@ -584,7 +656,13 @@ function ModalIngrediente({ item, onClose }) {
     if (!form.nome.trim()) return;
     const nutrLimpo = {};
     NUTRIENTES_PADRAO.forEach((n) => {
-      nutrLimpo[n.key] = parseFloat(form.nutrientes100g[n.key]) || 0;
+      const bruto = form.nutrientes100g[n.key];
+      if (bruto === '' || bruto === null || bruto === undefined) {
+        nutrLimpo[n.key] = null; // mantém campo em branco!
+      } else {
+        const parsed = parseFloat(bruto);
+        nutrLimpo[n.key] = Number.isFinite(parsed) ? parsed : null;
+      }
     });
 
     const payload = {
@@ -627,20 +705,23 @@ function ModalIngrediente({ item, onClose }) {
             className="w-4 h-4 accent-chef-500"
           />
           <span className="text-xs font-semibold text-chef-800">
-            Composição nutricional completa (por 100g) preenchida
+            Usar composição nutricional nos cálculos (campos sem valor podem ficar em branco)
           </span>
         </label>
 
         {form.dadosCompletos && (
           <div className="bg-chef-50/70 p-3 rounded-2xl border border-chef-100 space-y-2">
-            <p className="text-xs font-bold text-chef-700">Tabela Nutricional (valores em 100g):</p>
+            <p className="text-xs font-bold text-chef-700">
+              Tabela Nutricional em 100g (deixe em branco o que não se aplicar):
+            </p>
             <div className="grid grid-cols-2 gap-2">
               {NUTRIENTES_PADRAO.map((n) => (
                 <Campo
                   key={n.key}
                   label={`${n.label} (${n.unidade})`}
                   type="number"
-                  step="0.01"
+                  step="0.001"
+                  placeholder="em branco"
                   value={form.nutrientes100g[n.key]}
                   onChange={(v) => atualizarNutr(n.key, v)}
                 />
@@ -649,10 +730,7 @@ function ModalIngrediente({ item, onClose }) {
           </div>
         )}
 
-        <button
-          type="submit"
-          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
-        >
+        <button type="submit" className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow">
           Salvar Ingrediente
         </button>
       </form>
@@ -730,7 +808,6 @@ function ModalSuplemento({ item, onClose }) {
           <Campo label="Validade" type="date" value={form.validade} onChange={(v) => setForm({ ...form, validade: v })} />
         </div>
 
-        {/* Fotos do suplemento / rótulo */}
         <div>
           <label className="block text-xs font-bold text-chef-700 mb-1.5">Fotos (Produto e Rótulo)</label>
           <div className="flex flex-wrap gap-2">
@@ -754,7 +831,6 @@ function ModalSuplemento({ item, onClose }) {
           </div>
         </div>
 
-        {/* Substâncias relatadas no rótulo */}
         <div className="bg-chef-50/70 p-3 rounded-2xl border border-chef-100 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-chef-700">Substâncias no rótulo (por 1 {form.unidade || 'unidade'})</span>
@@ -786,21 +862,14 @@ function ModalSuplemento({ item, onClose }) {
                 onChange={(e) => editSubstancia(idx, 'unidade', e.target.value)}
                 className="col-span-3 px-2 py-1.5 bg-white border border-chef-200 rounded-lg text-xs"
               />
-              <button
-                type="button"
-                onClick={() => removerSubstancia(idx)}
-                className="col-span-1 text-tomato flex justify-center"
-              >
+              <button type="button" onClick={() => removerSubstancia(idx)} className="col-span-1 text-tomato flex justify-center">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
         </div>
 
-        <button
-          type="submit"
-          className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow"
-        >
+        <button type="submit" className="w-full py-3 bg-chef-500 hover:bg-chef-600 text-white font-bold rounded-xl shadow">
           Salvar Suplemento
         </button>
       </form>
